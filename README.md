@@ -7,7 +7,7 @@ CA UIM (Nimsoft) Perl Object-Oriented framework. Version 5 of perluim series.
 - new Probe Object (to replace old main.pm) 
 - Rework Logger class.
 - Integrated Emitter 
-- new Server class 
+- Server class with advanced scheduled callbacks features.
 
 ## Request draft 
 
@@ -36,4 +36,27 @@ if( $req->send({overbus => 0}) == NIME_OK ) {
 else {
     print "request fail with RC => $req->{RC} \n";
 }
+```
+
+## Emitter draft 
+
+** To be integrated ** 
+
+- Once method 
+
+```perl
+use Perluim::Core::Events;
+
+my $Emitter = Perluim::Core::Events->new;
+
+$Emitter->on(foo => sub {
+    print "hello world! \n";
+});
+
+$Emitter->on(foo => sub {
+    print "hello world 2! \n";
+});
+
+$Emitter->emit('foo'); # stdout hello world! and hello world 2!
+
 ```
