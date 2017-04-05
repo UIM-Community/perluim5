@@ -11,6 +11,11 @@ CA UIM (Nimsoft) Perl Object-Oriented framework. Version 5 of perluim series.
 
 ## Request draft 
 
+**To be integrated** 
+
+- Timeout  support 
+- PDS auto-parsing (in and out). 
+
 ```perl
 my $req = uimRequest({
     robot => "s00v09927022",
