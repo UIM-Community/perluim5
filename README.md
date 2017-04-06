@@ -60,3 +60,23 @@ $Emitter->on(foo => sub {
 $Emitter->emit('foo'); # stdout hello world! and hello world 2!
 
 ```
+
+## Logger draft 
+
+**To be integrated**
+- Timezone 
+- Truncate review
+- Multiple pipeline 
+- Remove cleanLogs (move to utils.pm)
+- Crash security (write on disk).
+
+```perl
+my $Logger = Perluim::Logger->new({
+    file => "test.log",
+    level => 6
+});
+```
+
+## Probe draft (server class)
+
+> Work in progress 
