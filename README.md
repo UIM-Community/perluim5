@@ -3,11 +3,12 @@ CA UIM (Nimsoft) Perl Object-Oriented framework. Version 5 of perluim series.
 
 # Roadmap (alpha stage)
 
-- new Request object 
-- new Probe Object (to replace old main.pm) 
+- new Request object (**final tests**)
+- new Probe Object (server class)
 - Rework Logger class.
-- Integrated Emitter 
-- Server class with advanced scheduled callbacks features.
+- Integrated Emitter with automatic mapping.
+- re-implementation of V4.x addons (with renaming) into Addons namespace
+- Create hub and controller probes class.
 
 ## Request draft 
 
