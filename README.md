@@ -113,3 +113,8 @@ sub get_info {
     nimSendReply($hMsg);
 }
 ```
+
+## Others
+
+- Simplify request construction in core class ( Merge hash, Default interfaces etc.. ) 
+- Add a binding for eventEmitter (simple extending ..)
