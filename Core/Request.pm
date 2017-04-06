@@ -19,6 +19,7 @@ sub new {
         port => defined $argRef->{port} ? $argRef->{port} : 48000,
         callback => defined $argRef->{callback} ? $argRef->{callback} : "get_info",
         retry => defined $argRef->{retry} ? $argRef->{retry} : 1,
+        timeout => defined $argRef->{timeout} ? $argRef->{timeout} : 5,
         RC => undef,
         Ret => undef,
         Emitter => Perluim::Core::Events->new
@@ -37,7 +38,12 @@ sub on {
 }
 
 sub setTimeout {
-    my ($self,$timeMilli) = @_;
+    my ($self,$timeOut) = @_;
+    if(defined $timeOut) {
+        $self->{timeout} = $timeOut;
+        return 1;
+    }
+    return 0;
 }
 
 sub setRetry {
@@ -61,44 +67,88 @@ sub getData {
 
 sub send {
     my ($self,$callRef,$PDSData) = @_;
-    my $overbus = defined $callRef->{overbus} ? $callRef->{overbus} : 1;
+    my ($overbus,$timeout);
+
+    if(ref($callRef) == "HASH") {
+        $overbus = defined $callRef->{overbus} ? $callRef->{overbus} : 1;
+        $timeout = defined $callRef->{timeout} ? $callRef->{timeout} : $self->{timeout};
+    }
+    else {
+        $overbus = $callRef; 
+        $timeout = $self->{timeout};
+    }
     my $PDS     = $PDSData || Nimbus::PDS->new;
     my $i       = 0;
     my $RC      = NIME_ERROR;
     my $Ret     = undef;
+    
 
+    $self->emit('log',"start new request with timeout set to $timeout");
     $| = 1; # Auto-flush ! 
 
-    if($overbus) {
+    if($overbus && defined $self->{addr}) {
         $self->emit('log','nimNamedRequest triggered');
         for(;$i < $self->{retry};$i++) {
-            ($RC,$Ret) = nimNamedRequest(
-                $self->{addr},
-                $self->{callback},
-                $PDS->data
-            );
-            $self->{Ret}    = $Ret;
-            $self->{RC}     = $RC;
+            eval {
+                local $SIG{ALRM} = sub { die "alarm\n" }; 
+                alarm $timeout;
+                ($RC,$Ret) = nimNamedRequest(
+                    $self->{addr},
+                    $self->{callback},
+                    $PDS->data
+                );
+                alarm 0;
+            };
+            if ($@) {
+                die unless $@ eq "alarm\n";   # propagate unexpected errors
+                $self->{RC}     = NIME_EXPIRED;
+                $self->emit('log','nimNamedRequest timeout');
+            }
+            else {
+                $self->{Ret}    = $Ret;
+                $self->{RC}     = $RC;
+            }
 
+            $self->emit('log',"terminated with RC => $RC");
             last if $RC == NIME_OK;
+            last if $RC != NIME_COMERR && $RC != NIME_ERROR;
+
+            sleep(1);
+        }
+    }
+    elsif(defined $self->{port} && defined $self->{robot}) {
+        $self->emit('log','nimRequest triggered');
+        for(;$i < $self->{retry};$i++) {
+            eval {
+                local $SIG{ALRM} = sub { die "alarm\n" }; 
+                alarm $timeout;
+                ($RC,$Ret) = nimRequest(
+                    $self->{robot},
+                    $self->{port},
+                    $self->{callback},
+                    $PDS->data
+                );
+                alarm 0;
+            };
+            if ($@) {
+                die unless $@ eq "alarm\n";   # propagate unexpected errors
+                $self->{RC}     = NIME_EXPIRED;
+                $self->emit('log','nimRequest timeout');
+            }
+            else {
+                $self->{Ret}    = $Ret;
+                $self->{RC}     = $RC;
+            }
+
+            $self->emit('log',"terminated with RC => $RC");
+            last if $RC == NIME_OK;
+            last if $RC != NIME_COMERR && $RC != NIME_ERROR;
+
             sleep(1);
         }
     }
     else {
-        $self->emit('log','nimRequest triggered');
-        for(;$i < $self->{retry};$i++) {
-            ($RC,$Ret) = nimRequest(
-                $self->{robot},
-                $self->{port},
-                $self->{callback},
-                $PDS->data
-            );
-            $self->{Ret}    = $Ret;
-            $self->{RC}     = $RC;
-
-            last if $RC == NIME_OK;
-            sleep(1);
-        }
+        $self->emit('log','missing request data to launch a new request!');
     }
     return $RC;
 }
