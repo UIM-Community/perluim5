@@ -2,7 +2,6 @@ package Perluim::Core::Request;
 
 use Nimbus::API;
 use Nimbus::PDS;
-use Data::Dumper;
 use Perluim::Core::Events;
 use Scalar::Util qw(reftype looks_like_number);
 
@@ -15,14 +14,14 @@ sub new {
         }
     }
     my $this = {
-        robot => $argRef->{robot},
-        addr => $argRef->{addr},
-        port => defined $argRef->{port} ? $argRef->{port} : 48000,
+        robot   => $argRef->{robot},
+        addr    => $argRef->{addr},
+        port    => defined $argRef->{port} ? $argRef->{port} : 48000,
         callback => defined $argRef->{callback} ? $argRef->{callback} : "get_info",
-        retry => defined $argRef->{retry} ? $argRef->{retry} : 1,
+        retry   => defined $argRef->{retry} ? $argRef->{retry} : 1,
         timeout => defined $argRef->{timeout} ? $argRef->{timeout} : 5,
-        RC => undef,
-        Ret => undef,
+        RC      => undef,
+        Ret     => undef,
         Emitter => Perluim::Core::Events->new
     };
     return bless($this,ref($class) || $class);
@@ -66,6 +65,21 @@ sub getData {
     return undef;
 }
 
+sub _pdsFromHash {
+    my ($self,$PDSData) = @_;
+    my $PDS = Nimbus::PDS->new;
+    for my $key (keys %{ $PDSData }) {
+        my $val = $PDSData->{$key};
+        if(ref($val) eq "HASH") {
+            $PDS->put($key,$val,PDS_PDS);
+        }
+        else {
+            $PDS->put($key,$val,looks_like_number($val) ? PDS_INT : PDS_PCH);
+        }
+    }
+    return $PDS;
+}
+
 sub send {
     my ($self,$callRef,$PDSData) = @_;
     my ($overbus,$timeout,$PDS);
@@ -80,17 +94,7 @@ sub send {
     }
     
     if(ref($PDSData) eq "HASH") {
-        $PDS = Nimbus::PDS->new;
-        for my $key (keys %{ $PDSData }) {
-            my $val = $PDSData->{$key};
-            $self->emit('log',"PDS Dump => key: $key and val: $val\n");
-            if(ref($val) eq "HASH") {
-                $PDS->put($key,$val,PDS_PDS);
-            }
-            else {
-                $PDS->put($key,$val,looks_like_number($val) ? PDS_INT : PDS_PCH);
-            }
-        }
+        $PDS = $self->_pdsFromHash($PDSData);
     }
     else {
         $PDS    = defined $PDSData ? $PDSData : Nimbus::PDS->new;
