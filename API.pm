@@ -28,6 +28,7 @@ use Perluim::Core::Probe;
     LogDEBUG
     LogNOLEVEL
     LogSUCCESS
+    toMilliseconds
 );
 no warnings 'recursion';
 
@@ -64,9 +65,13 @@ sub new {
     return bless($this,ref($class) || $class);
 }
 
+sub toMilliseconds {
+    my ($second) = @_; 
+    return $second * 1000;
+}
+
 sub uimRequest {
     my ($argRef) = @_;
-    print ref($argRef);
     return Perluim::Core::Request->new($argRef);
 }
 
