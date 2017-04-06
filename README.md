@@ -16,25 +16,28 @@ CA UIM (Nimsoft) Perl Object-Oriented framework. Version 5 of perluim series.
 - PDS auto-parsing (in and out). 
 
 ```perl
+my $Logger = Perluim::Logger->new({
+    file => "test.log",
+    level => 6
+});
+
 my $req = uimRequest({
     robot => "s00v09927022",
     port => 48000,
-    callback => "get_info"
+    callback => "probe_list"
 });
 
-$req->on(log => sub {
-    my $msg = shift; 
-    print "request log => $msg \n";
-});
+$Logger->map( $req );
 
-if( $req->send({overbus => 0}) == NIME_OK ) {
-    print "request ok! \n";
+if( $req->send(0,{ name => "controller" }) == NIME_OK ) {
+    $Logger->info("Request OK");
     my $data = $req->getData(); 
-    print Dumper( $data )."\n";
+    $Logger->info(Dumper( $data ));
 }
 else {
-    print "request fail with RC => $req->{RC} \n";
+    $Logger->info("request fail with RC => $req->{RC}");
 }
+
 ```
 
 ## Emitter draft 
