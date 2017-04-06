@@ -4,6 +4,7 @@ use Nimbus::API;
 use Nimbus::PDS;
 use Data::Dumper;
 use Perluim::Core::Events;
+use Scalar::Util qw(reftype looks_like_number);
 
 sub new {
     my ($class,$argRef) = @_;
@@ -61,13 +62,13 @@ sub getData {
         my $Hash = Nimbus::PDS->new($self->{Ret})->asHash();
         return $Hash;
     }
-    $self->emit('log','inner data is not defined!');
+    $self->emit('log',"unable to find data\n");
     return undef;
 }
 
 sub send {
     my ($self,$callRef,$PDSData) = @_;
-    my ($overbus,$timeout);
+    my ($overbus,$timeout,$PDS);
 
     if(ref($callRef) == "HASH") {
         $overbus = defined $callRef->{overbus} ? $callRef->{overbus} : 1;
@@ -77,17 +78,33 @@ sub send {
         $overbus = $callRef; 
         $timeout = $self->{timeout};
     }
-    my $PDS     = $PDSData || Nimbus::PDS->new;
+    
+    if(ref($PDSData) eq "HASH") {
+        $PDS = Nimbus::PDS->new;
+        for my $key (keys %{ $PDSData }) {
+            my $val = $PDSData->{$key};
+            $self->emit('log',"PDS Dump => key: $key and val: $val\n");
+            if(ref($val) eq "HASH") {
+                $PDS->put($key,$val,PDS_PDS);
+            }
+            else {
+                $PDS->put($key,$val,looks_like_number($val) ? PDS_INT : PDS_PCH);
+            }
+        }
+    }
+    else {
+        $PDS    = defined $PDSData ? $PDSData : Nimbus::PDS->new;
+    }
     my $i       = 0;
     my $RC      = NIME_ERROR;
     my $Ret     = undef;
     
 
-    $self->emit('log',"start new request with timeout set to $timeout");
+    $self->emit('log',"start new request with timeout set to $timeout\n");
     $| = 1; # Auto-flush ! 
 
     if($overbus && defined $self->{addr}) {
-        $self->emit('log','nimNamedRequest triggered');
+        $self->emit('log',"nimNamedRequest triggered\n");
         for(;$i < $self->{retry};$i++) {
             eval {
                 local $SIG{ALRM} = sub { die "alarm\n" }; 
@@ -102,14 +119,14 @@ sub send {
             if ($@) {
                 die unless $@ eq "alarm\n";   # propagate unexpected errors
                 $self->{RC}     = NIME_EXPIRED;
-                $self->emit('log','nimNamedRequest timeout');
+                $self->emit('log',"nimNamedRequest timeout\n");
             }
             else {
                 $self->{Ret}    = $Ret;
                 $self->{RC}     = $RC;
             }
 
-            $self->emit('log',"terminated with RC => $RC");
+            $self->emit('log',"terminated with RC => $RC\n");
             last if $RC == NIME_OK;
             last if $RC != NIME_COMERR && $RC != NIME_ERROR;
 
@@ -117,7 +134,7 @@ sub send {
         }
     }
     elsif(defined $self->{port} && defined $self->{robot}) {
-        $self->emit('log','nimRequest triggered');
+        $self->emit('log',"nimRequest triggered\n");
         for(;$i < $self->{retry};$i++) {
             eval {
                 local $SIG{ALRM} = sub { die "alarm\n" }; 
@@ -133,14 +150,14 @@ sub send {
             if ($@) {
                 die unless $@ eq "alarm\n";   # propagate unexpected errors
                 $self->{RC}     = NIME_EXPIRED;
-                $self->emit('log','nimRequest timeout');
+                $self->emit('log',"nimRequest timeout\n");
             }
             else {
                 $self->{Ret}    = $Ret;
                 $self->{RC}     = $RC;
             }
 
-            $self->emit('log',"terminated with RC => $RC");
+            $self->emit('log',"terminated with RC => $RC\n");
             last if $RC == NIME_OK;
             last if $RC != NIME_COMERR && $RC != NIME_ERROR;
 
@@ -148,7 +165,7 @@ sub send {
         }
     }
     else {
-        $self->emit('log','missing request data to launch a new request!');
+        $self->emit('log',"missing request data to launch a new request!\n");
     }
     return $RC;
 }
