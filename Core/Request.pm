@@ -167,6 +167,7 @@ sub send {
     else {
         $self->emit('log',"missing request data to launch a new request!\n");
     }
+    $self->emit('done',$RC);
     return $RC;
 }
 
