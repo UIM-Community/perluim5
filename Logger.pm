@@ -48,7 +48,7 @@ sub _date {
 	return "$months[$mon] $timetwoDigits";
 }
 
-sub map {
+sub trace {
     my($self,$emitter) = @_;
     eval {
         $emitter->on(log => sub {
@@ -121,15 +121,18 @@ sub copyTo {
 }
 
 sub fatal {
-
+	my ($self,$msg) = @_;
+	$self->log(0,$msg);
 }
 
 sub error {
-
+	my ($self,$msg) = @_;
+	$self->log(1,$msg);
 }
 
 sub warn {
-
+	my ($self,$msg) = @_;
+	$self->log(2,$msg);
 }
 
 sub info {
@@ -138,13 +141,16 @@ sub info {
 }
 
 sub debug {
-
+	my ($self,$msg) = @_;
+	$self->log(4,$msg);
 }
 
 sub nolevel {
-
+	my ($self,$msg) = @_;
+	$self->log(5,$msg);
 }
 
 sub success {
-
+	my ($self,$msg) = @_;
+	$self->log(6,$msg);
 }
