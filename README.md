@@ -19,24 +19,28 @@ my $Logger = Perluim::Logger->new({
 });
 
 my $req = uimRequest({
-    robot => "s00v09927022",
-    port => 48000,
+    robot => "s00v09927022", 
+    port => 48000, 
     callback => "probe_list",
-    timeout => 2,
-    retry => 3
+    retry => 3,
+    timeout => 2
 });
 
-$Logger->map( $req );
+$Logger->trace( $req );
 
-if( $req->send(0,{ name => "controller" }) == NIME_OK ) {
-    $Logger->info("Request OK");
-    my $data = $req->getData(); 
-    $Logger->info(Dumper( $data ));
-}
-else {
-    $Logger->info("request fail with RC => $req->{RC}");
-}
+$req->on( done => sub {
+    my $RC = shift;
+    if($RC == NIME_OK) {
+        $Logger->success("Request OK");
+        my $data = $req->getData(); 
+        $Logger->debug(Dumper( $data ));
+        return;
+    }
+    $Logger->error("request fail with RC => $req->{RC}");
+});
 
+my @Probes = ('controller','distsrv');
+$req->send(0,{ name => $_ }) for @Probes;
 ```
 
 ## Emitter draft 
