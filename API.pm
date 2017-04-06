@@ -14,14 +14,32 @@ use Nimbus::CFG;
 use Nimbus::PDS;
 
 use Perluim::Core::Request;
+use Perluim::Core::Probe;
 
 @ISA = qw(Exporter DynaLoader);
 
 @EXPORT = qw(
     uimRequest
     uimProbe
+    LogFATAL
+    LogERROR
+    LogWARN
+    LogINFO
+    LogDEBUG
+    LogNOLEVEL
+    LogSUCCESS
 );
 no warnings 'recursion';
+
+use constant {
+	LogFATAL    => 0,
+	LogERROR    => 1,
+	LogWARN     => 2,
+	LogINFO	    => 3,
+	LogDEBUG    => 4,
+	LogNOLEVEL  => 5,
+	LogSUCCESS  => 6
+};
 
 sub AUTOLOAD {
 	no strict 'refs'; 
@@ -48,11 +66,13 @@ sub new {
 
 sub uimRequest {
     my ($argRef) = @_;
+    print ref($argRef);
     return Perluim::Core::Request->new($argRef);
 }
 
 sub uimProbe {
-    my ($name,$version) = @_;
+    my ($argRef) = @_;
+    return Perluim::Core::Probe->new($argRef);
 }
 
 1;
