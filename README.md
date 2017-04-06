@@ -79,4 +79,37 @@ my $Logger = Perluim::Logger->new({
 
 ## Probe draft (server class)
 
-> Work in progress 
+**To be integrated**
+- Scheduled callback
+- Test around hubpost and subscribe
+
+```perl
+my $probe = uimProbe({
+    name => "test",
+    version => "1.0",
+    timeout => toMilliseconds(10)
+});
+
+$Logger->trace( $probe );
+
+$probe->registerCallback( "get_info" , {
+    name => "String",
+    count => "Int"
+});
+
+$probe->on( restart => sub {
+    $Logger->info("Probe restarted");
+});
+
+$probe->on( timeout => sub {
+    $Logger->info("Probe timeout");
+});
+
+$probe->start();
+
+sub get_info {
+    my ($hMsg,$count,$name) = @_;
+    $Logger->info("get_info callback triggered with count => $count and name => $name");
+    nimSendReply($hMsg);
+}
+```
