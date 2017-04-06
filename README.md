@@ -12,8 +12,6 @@ CA UIM (Nimsoft) Perl Object-Oriented framework. Version 5 of perluim series.
 ## Request draft 
 
 **To be integrated** 
-
-- Timeout  support 
 - PDS auto-parsing (in and out). 
 
 ```perl
@@ -40,8 +38,7 @@ else {
 
 ## Emitter draft 
 
-** To be integrated ** 
-
+**To be integrated** 
 - Once method 
 
 ```perl
