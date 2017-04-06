@@ -19,7 +19,7 @@ my $Logger = Perluim::Logger->new({
 });
 
 my $req = uimRequest({
-    robot => "s00v09927022", 
+    robot => "serverName", 
     port => 48000, 
     callback => "probe_list",
     retry => 3,
