@@ -10,10 +10,7 @@ CA UIM (Nimsoft) Perl Object-Oriented framework. Version 5 of perluim series.
 - re-implementation of V4.x addons (with renaming) into Addons namespace
 - Create hub and controller probes class.
 
-## Request draft 
-
-**To be integrated** 
-- PDS auto-parsing (in and out). 
+## Request (v1.0) 
 
 ```perl
 my $Logger = Perluim::Logger->new({
@@ -24,7 +21,9 @@ my $Logger = Perluim::Logger->new({
 my $req = uimRequest({
     robot => "s00v09927022",
     port => 48000,
-    callback => "probe_list"
+    callback => "probe_list",
+    timeout => 2,
+    retry => 3
 });
 
 $Logger->map( $req );
