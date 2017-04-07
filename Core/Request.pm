@@ -6,6 +6,7 @@ use warnings;
 use Nimbus::API;
 use Nimbus::PDS;
 use Perluim::Core::Events;
+use Perluim::Core::Response;
 use Scalar::Util qw(reftype looks_like_number);
 
 our %nimport_map = (
@@ -62,16 +63,6 @@ sub setRetry {
         return 1;
     }
     return 0;
-}
-
-sub getData {
-    my ($self) = @_;
-    if(defined $self->{Ret}) {
-        my $Hash = Nimbus::PDS->new($self->{Ret})->asHash();
-        return $Hash;
-    }
-    $self->emit('log',"unable to find data\n");
-    return undef;
 }
 
 sub _pdsFromHash {
@@ -152,14 +143,17 @@ sub send {
     elsif(defined $self->{port} && ( defined $self->{robot} || defined $nimport_map{ $self->{port} } )) {
         $self->emit('log',"nimRequest triggered\n");
         for(;$i < $self->{retry};$i++) {
+            my $robotNFO = defined $self->{robot} ? $self->{robot} : $nimport_map{ $self->{port} };
             eval {
                 local $SIG{ALRM} = sub { 
                     $self->emit('log',"die emitted...\n");
                     die "alarm\n";
                 }; 
                 alarm $timeout;
+                $self->emit('log',"robot => $robotNFO\n");
+                $self->emit('log',"port => $self->{port}\n");
                 ($RC,$Ret) = nimRequest(
-                    $self->{robot} || $nimport_map{ $self->{port} },
+                    $robotNFO,
                     $self->{port},
                     $self->{callback},
                     $PDS->data
@@ -187,8 +181,12 @@ sub send {
     else {
         $self->emit('log',"missing request data to launch a new request!\n");
     }
-    $self->emit('done',$RC);
-    return $RC,$self->getData();
+    my $response = Perluim::Core::Response->new({
+        rc => $self->{RC},
+        data => $self->{Ret}
+    });
+    $self->emit('done',$response);
+    return $response;
 }
 
 1;
