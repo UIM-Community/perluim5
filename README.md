@@ -97,11 +97,8 @@ $Emitter->emit('foo'); # stdout hello world! and hello world 2!
 ## Logger draft 
 
 **To be integrated**
-- Timezone 
-- Truncate review
-- Multiple pipeline 
-- Remove cleanLogs (move to utils.pm)
-- Crash security (write on disk).
+- Truncate support (chunk)
+- Pipe to another fileHandler
 
 ```perl
 my $Logger = Perluim::Logger->new({
@@ -150,6 +147,5 @@ sub get_info {
 
 ## Others
 
-- Simplify request construction in core class ( Merge hash, Default interfaces etc.. ) 
 - Extend all class by an Event instance.
 - Extend probe by an abstracted class with default callback (_restart etc..)
