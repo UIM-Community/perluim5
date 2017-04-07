@@ -49,17 +49,13 @@ Example with Response object (returned by send).
 
 ```perl
 sub getLocalRobot {
-    my $req = uimRequest({
-        addr => "controller",
-        callback => "get_info",
-        retry => 3,
-        timeout => 5
-    });
+    my ($options) = @_; 
+    $options = assignHash({ addr => "controller", callback => "get_info" },$options,$IDefaultRequest);
+    my $req = uimRequest($options);
     $Logger->trace($req) if defined $Logger && $Debug == 1;
     my $res = $req->send(1);
     return $res->rc(), $res->is(NIME_OK) ? Perluim::Probes::Robot->new($res->pdsData()) : undef;
 }
-
 ```
 
 ## Response (draft)
