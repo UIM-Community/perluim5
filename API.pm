@@ -16,12 +16,17 @@ use Nimbus::PDS;
 use Perluim::Core::Request;
 use Perluim::Core::Probe;
 use Perluim::Logger;
+use Perluim::Probes::Hub;
+use Perluim::Probes::Robot;
 
+our $Logger;
+our $Debug = 0;
 @ISA = qw(Exporter DynaLoader);
 
 @EXPORT = qw(
     uimRequest
     uimProbe
+    uimLogger
     LogFATAL
     LogERROR
     LogWARN
@@ -38,6 +43,10 @@ use Perluim::Logger;
     rndStr
     nimId
     generateAlarm
+    pdsFromHash
+    getHubs
+    getRobots
+    getLocalRobot
 );
 no warnings 'recursion';
 
@@ -68,15 +77,87 @@ sub AUTOLOAD {
     goto &$sub;
 }
 
-sub new {
-    my ($class) = @_;
-    my $this = {};
-    return bless($this,ref($class) || $class);
+sub uimRequest {
+    my ($argRef) = @_;
+    return Perluim::Core::Request->new($argRef);
+}
+
+sub uimProbe {
+    my ($argRef) = @_;
+    my $probe = Perluim::Core::Probe->new($argRef);
+    $probe->setLogger( $Logger ) if defined $Logger;
+    return $probe;
+}
+
+sub uimLogger {
+    my ($argRef) = @_;
+    my $log = Perluim::Logger->new($argRef);
+    if(!defined $Logger) {
+        $Logger = $log;
+    }
+    return $log;
+}
+
+sub getLocalRobot {
+    my $req = uimRequest({
+        addr => "controller",
+        callback => "get_info",
+        retry => 3,
+        timeout => 5
+    });
+    $Logger->trace($req) if defined $Logger && $Debug == 1;
+    my $res = $req->send(1);
+    return $res->rc(), $res->is(NIME_OK) ? Perluim::Probes::Robot->new($res->pdsData()) : undef;
+}
+
+sub getHubs {
+    my $req = uimRequest({
+        addr => "hub",
+        callback => "gethubs",
+        retry => 3,
+        timeout => 5
+    });
+    $Logger->trace($req) if defined $Logger && $Debug == 1;
+    my $res = $req->send(1);
+    if( $res->is(NIME_OK) ) {
+        my @Hubslist = ();
+        for( my $i = 0; my $HubPDS = $res->pdsData()->getTable("hublist",PDS_PDS,$i); $i++) {
+            push(@Hubslist,Perluim::Probes::Hub->new($HubPDS));
+        }
+        return $res->rc(),@Hubslist;
+    }
+    return $res->rc(),undef;
+}
+
+sub getRobots {
+    my ($RC,@Hubs) = getHubs(); 
+    if($RC == NIME_OK) {
+        foreach my $hub (@Hubs) {
+            # $hub->getRobots();
+        }
+        # get robots from hub!
+    }   
+    return $RC,undef;
 }
 
 sub toMilliseconds {
     my ($second) = @_; 
     return $second * 1000;
+}
+
+sub pdsFromHash {
+    my ($PDSData) = @_;
+    my $PDS = Nimbus::PDS->new;
+    for my $key (keys %{ $PDSData }) {
+        my $val = $PDSData->{$key};
+        if(ref($val) eq "HASH") {
+            $PDS->put($key,$val,PDS_PDS);
+        }
+        else {
+            $PDS->put($key,$val,looks_like_number($val) ? PDS_INT : PDS_PCH);
+        }
+    }
+    return $PDS;
 }
 
 sub doSleep {
@@ -170,20 +251,5 @@ sub generateAlarm {
 
     return ($PDS,$nimid);
 }    
-
-sub uimRequest {
-    my ($argRef) = @_;
-    return Perluim::Core::Request->new($argRef);
-}
-
-sub uimProbe {
-    my ($argRef) = @_;
-    return Perluim::Core::Probe->new($argRef);
-}
-
-sub uimLogger {
-    my ($argRef) = @_;
-    return Perluim::Logger->new($argRef);
-}
 
 1;
