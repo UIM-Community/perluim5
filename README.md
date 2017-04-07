@@ -76,10 +76,7 @@ $Response->pdsData();
 $Response->hashData(); 
 ```
 
-## Emitter draft 
-
-**To be integrated** 
-- Once method 
+## Emitter V1.0 
 
 ```perl
 use Perluim::Core::Events;
