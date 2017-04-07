@@ -61,6 +61,21 @@ sub getLocalRobot {
 
 ```
 
+## Response draft
+
+Returned by the Request.
+
+**To be integrated**
+- More informations about : callback,addr,numbers of retry before success etc..
+
+```perl
+my $Response = $req->send(0); 
+$Response->rc(); 
+$Response->is(NIME_ERR); 
+$Response->pdsData(); 
+$Response->hashData(); 
+```
+
 ## Emitter draft 
 
 **To be integrated** 
@@ -80,7 +95,6 @@ $Emitter->on(foo => sub {
 });
 
 $Emitter->emit('foo'); # stdout hello world! and hello world 2!
-
 ```
 
 ## Logger draft 
@@ -103,6 +117,7 @@ my $Logger = Perluim::Logger->new({
 
 **To be integrated**
 - Scheduled callback
+- Integrated infrastructure scan
 - Test around hubpost and subscribe
 
 ```perl
@@ -139,4 +154,5 @@ sub get_info {
 ## Others
 
 - Simplify request construction in core class ( Merge hash, Default interfaces etc.. ) 
-- Add a binding for eventEmitter (simple extending ..)
+- Extend all class by an Event instance.
+- Extend probe by an abstracted class with default callback (_restart etc..)
