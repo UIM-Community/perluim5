@@ -4,6 +4,7 @@ use Nimbus::API;
 use Nimbus::Session;
 use Data::Dumper;
 use Perluim::Core::Events;
+use Perluim::API;
 
 sub new {
     my ($class,$argRef) = @_;
@@ -17,9 +18,23 @@ sub new {
         _sess => undef,
         callbacks => {},
         subscribtions => \@Subscribtions,
-        Emitter => Perluim::Core::Events->new
+        Emitter => Perluim::Core::Events->new,
+        Logger => undef,
+        hubs => {},
+        robots => {}
     };
     return bless($this,ref($class) || $class);
+}
+
+sub setLogger {
+    my ($self,$logger) = @_;
+    if(defined $logger) {
+        $self->{Logger} = $logger;
+    }
+}
+
+sub scan {
+
 }
 
 sub emit {
