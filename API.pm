@@ -3,6 +3,7 @@ package Perluim::API;
 use strict;
 use warnings;
 use Carp;
+use Data::Dumper;
 use vars qw(@ISA @EXPORT $AUTOLOAD);
 require 5.010;
 require Exporter;
@@ -21,6 +22,11 @@ use Perluim::Probes::Robot;
 
 our $Logger;
 our $Debug = 0;
+our $IDefaultRequest = {
+    retry => 3,
+    timeout => 5
+};
+
 @ISA = qw(Exporter DynaLoader);
 
 @EXPORT = qw(
@@ -44,6 +50,7 @@ our $Debug = 0;
     nimId
     generateAlarm
     pdsFromHash
+    assignHash
     getHubs
     getRobots
     getLocalRobot
@@ -99,24 +106,18 @@ sub uimLogger {
 }
 
 sub getLocalRobot {
-    my $req = uimRequest({
-        addr => "controller",
-        callback => "get_info",
-        retry => 3,
-        timeout => 5
-    });
+    my ($options) = @_; 
+    $options = assignHash({ addr => "controller", callback => "get_info" },$options,$IDefaultRequest);
+    my $req = uimRequest($options);
     $Logger->trace($req) if defined $Logger && $Debug == 1;
     my $res = $req->send(1);
     return $res->rc(), $res->is(NIME_OK) ? Perluim::Probes::Robot->new($res->pdsData()) : undef;
 }
 
 sub getHubs {
-    my $req = uimRequest({
-        addr => "hub",
-        callback => "gethubs",
-        retry => 3,
-        timeout => 5
-    });
+    my ($options) = @_; 
+    $options = assignHash({ addr => "hub", callback => "gethubs" },$options,$IDefaultRequest);
+    my $req = uimRequest($options);
     $Logger->trace($req) if defined $Logger && $Debug == 1;
     my $res = $req->send(1);
     if( $res->is(NIME_OK) ) {
@@ -138,6 +139,21 @@ sub getRobots {
         # get robots from hub!
     }   
     return $RC,undef;
+}
+
+sub assignHash {
+    my ($targetRef,$cibleRef,@othersRef) = @_;
+    foreach my $key (keys %{ $cibleRef }) {
+        if(!defined $targetRef->{$key}) {
+            $targetRef->{$key} = $cibleRef->{$key};
+        }
+    }
+    if(scalar @othersRef > 0) {
+        foreach(@othersRef) {
+            $targetRef = assignHash($targetRef,$_);
+        }
+    }
+    return $targetRef;
 }
 
 sub toMilliseconds {
