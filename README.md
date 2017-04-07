@@ -3,14 +3,16 @@ CA UIM (Nimsoft) Perl Object-Oriented framework. Version 5 of perluim series.
 
 # Roadmap (alpha stage)
 
-- new Request object (**final tests**)
-- new Probe Object (server class)
-- Rework Logger class.
-- Integrated Emitter with automatic mapping.
-- re-implementation of V4.x addons (with renaming) into Addons namespace
-- Create hub and controller probes class.
+- New request object (with Response object).
+- New probe object (to replace default server solution with proper events catching).
+- New logger class (updated from v4.2) 
+- Built-in event class.
+- Re-implementation of useful class of V4 into the Addons namespace.
+- New probes abstraction layer (**work in progress**)
 
-## Request (v1.0) 
+## Request (alpha release)
+
+The new request object offer a proper Object-oriented API. Launch multiple request without re-creating any objects, store response object and get more data about it.
 
 ```perl
 my $Logger = Perluim::Logger->new({
@@ -42,7 +44,6 @@ $req->on( done => sub {
 my @Probes = ('controller','distsrv');
 $req->send(0,{ name => $_ }) for @Probes;
 ```
----
 
 Example with Response object (returned by send).
 
@@ -61,7 +62,7 @@ sub getLocalRobot {
 
 ```
 
-## Response draft
+## Response (draft)
 
 Returned by the Request.
 
@@ -76,7 +77,7 @@ $Response->pdsData();
 $Response->hashData(); 
 ```
 
-## Emitter V1.0 
+## Events (alpha release)
 
 ```perl
 use Perluim::Core::Events;
@@ -94,7 +95,7 @@ $Emitter->on(foo => sub {
 $Emitter->emit('foo'); # stdout hello world! and hello world 2!
 ```
 
-## Logger draft 
+## Logger (alpha release) 
 
 **To be integrated**
 - Truncate support (chunk)
@@ -107,7 +108,7 @@ my $Logger = Perluim::Logger->new({
 });
 ```
 
-## Probe draft (server class)
+## Probe (alpha release)
 
 **To be integrated**
 - Scheduled callback
@@ -144,6 +145,10 @@ sub get_info {
     nimSendReply($hMsg);
 }
 ```
+
+## Probes 
+
+> Work in progress
 
 ## Others
 
