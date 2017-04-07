@@ -42,6 +42,24 @@ $req->on( done => sub {
 my @Probes = ('controller','distsrv');
 $req->send(0,{ name => $_ }) for @Probes;
 ```
+---
+
+Example with Response object (returned by send).
+
+```perl
+sub getLocalRobot {
+    my $req = uimRequest({
+        addr => "controller",
+        callback => "get_info",
+        retry => 3,
+        timeout => 5
+    });
+    $Logger->trace($req) if defined $Logger && $Debug == 1;
+    my $res = $req->send(1);
+    return $res->rc(), $res->is(NIME_OK) ? Perluim::Probes::Robot->new($res->pdsData()) : undef;
+}
+
+```
 
 ## Emitter draft 
 
