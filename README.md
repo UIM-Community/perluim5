@@ -1,14 +1,16 @@
 # perluim5
 CA UIM (Nimsoft) Perl Object-Oriented framework. Version 5 of perluim series.
 
-# Roadmap (alpha stage)
+# Roadmap (alpha & draft stage)
 
-- New request object (with Response object).
-- New probe object (to replace default server solution with proper events catching).
-- New logger class (updated from v4.2) 
-- Built-in event class.
-- Re-implementation of useful class of V4 into the Addons namespace.
-- New probes abstraction layer (**work in progress**)
+- Delete all states objects from request Object.
+- Map all states to response object.
+- Better getter/setter in the request API.
+- Load requests from CFG (like alarmsmanager.pm from V4.X).
+- Better tracing of requests.
+- Add dump for response Object.
+- New emitter 'error' for request Object.
+- Work to include a Promise API (async handle).
 
 ## Request (alpha release)
 
@@ -104,7 +106,7 @@ my $Logger = Perluim::Logger->new({
 });
 ```
 
-## Probe (alpha release)
+## Server API (alpha release)
 
 **To be integrated**
 - Scheduled callback
