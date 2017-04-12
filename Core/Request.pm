@@ -84,12 +84,22 @@ sub _pdsFromHash {
     return $PDS;
 }
 
+sub _rndStr { 
+    my @chars = ("a".."z");
+    my $string;
+    $string .= $chars[rand @chars] for 1..10;
+    return $string;
+}
+
 sub send {
     my ($self,$callRef,$PDSData) = @_;
     my ($overbus,$timeout,$callback,$addr,$port,$robot,$retry,$Ret,$PDS);
-    my $i       = 0;
-    my $RC      = NIME_ERROR;
-    my $t_start = time;
+    my $i           = 0;
+    my $RC          = NIME_ERROR;
+    my $t_start     = time;
+
+    my $request_id  = $self->_rndStr();
+    my $header      = "[req::$request_id]";
 
     # Define variables
     if(ref($callRef) eq "HASH") {
@@ -114,11 +124,11 @@ sub send {
     # Hydrate PDS
     $PDS = ref($PDSData) eq "HASH" ? $self->_pdsFromHash($PDSData) : (defined $PDSData ? $PDSData : Nimbus::PDS->new);
 
-    $self->emit('log',"start new request with timeout set to $timeout, callback => $self->{callback}\n");
+    $self->emit('log',"$header New request sent to Nimbus");
     $| = 1; # Flush I/O
 
     if($overbus && defined $addr) {
-        $self->emit('log',"nimNamedRequest triggered\n");
+        $self->emit('log',"$header nimNamedRequest triggered");
         for(;$i < $retry;$i++) {
             eval {
                 local $SIG{ALRM} = sub { 
@@ -134,11 +144,11 @@ sub send {
             };
             if ($@) {
                 $RC = NIME_EXPIRED;
-                $self->emit('log',"nimNamedRequest timeout\n");
+                $self->emit('log',"$header nimNamedRequest timeout");
                 die unless $@ eq "alarm\n";   # propagate unexpected errors
             }
 
-            $self->emit('log',"terminated with RC => $RC\n");
+            $self->emit('log',"$header terminated with RC => $RC");
             last if $RC == NIME_OK;
 
             $self->emit('error',nimError2Txt($RC));
@@ -147,17 +157,15 @@ sub send {
             sleep(1);
         }
     }
-    elsif(defined $port && ( defined $robot || defined $nimport_map{ $port } )) {
-        $self->emit('log',"nimRequest triggered\n");
+    elsif(defined $port && ( defined $robot || defined $nimport_map{ $port } ) ) {
+        $self->emit('log',"$header nimRequest triggered");
         for(;$i < $retry;$i++) {
-            $robot = defined $robot ? $robot : $nimport_map{ $port} };
+            $robot = defined $robot ? $robot : $nimport_map{ $port };
             eval {
                 local $SIG{ALRM} = sub { 
                     die "alarm\n";
                 }; 
                 alarm $timeout;
-                $self->emit('log',"robot => $robotNFO\n");
-                $self->emit('log',"port => $self->{port}\n");
                 ($RC,$Ret) = nimRequest(
                     $robot,
                     $port,
@@ -168,11 +176,11 @@ sub send {
             };
             if ($@) {
                 $RC = NIME_EXPIRED;
-                $self->emit('log',"nimRequest timeout\n");
+                $self->emit('log',"$header nimRequest timeout");
                 die unless $@ eq "alarm\n";   # propagate unexpected errors
             }
 
-            $self->emit('log',"terminated with RC => $RC\n");
+            $self->emit('log',"$header terminated with RC => $RC");
             last if $RC == NIME_OK;
 
             $self->emit('error',nimError2Txt($RC));
@@ -182,11 +190,12 @@ sub send {
         }
     }
     else {
-        $self->emit('error',"missing request data to launch a new request!\n");
+        $self->emit('error',"$header missing request data to launch a new request!");
     }
 
     my $response = Perluim::Core::Response->new({
         rc => $RC,
+        id => $request_id,
         data => $Ret,
         time => $t_start - time,
         retry => $i,
