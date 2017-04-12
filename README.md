@@ -3,13 +3,8 @@ CA UIM (Nimsoft) Perl Object-Oriented framework. Version 5 of perluim series.
 
 # Roadmap (alpha & draft stage)
 
-- Delete all states objects from request Object.
-- Map all states to response object.
-- Better getter/setter in the request API.
 - Load requests from CFG (like alarmsmanager.pm from V4.X).
-- Better tracing of requests.
-- Add dump for response Object.
-- New emitter 'error' for request Object.
+- Try to handle request with async & threads module.
 - Work to include a Promise API (async handle).
 
 ## Request (alpha release)
