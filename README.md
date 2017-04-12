@@ -68,6 +68,9 @@ $Response->rc();
 $Response->is(NIME_ERR); 
 $Response->pdsData(); 
 $Response->hashData(); 
+$Response->dump(); 
+$Response->getCallback();
+etc...
 ```
 
 ## Events (alpha release)
@@ -99,6 +102,13 @@ my $Logger = Perluim::Logger->new({
     file => "test.log",
     level => 6
 });
+$Logger->log(LogWARN,"Warning !!!");
+$Logger->warn("Warning 2!!!"); 
+$Logger->debug("Debug info!"); 
+
+$Logger->dump( $Response ); 
+$Logger->catch( $Emitter );
+$Logger->trace( $Emitter );
 ```
 
 ## Server API (alpha release)
