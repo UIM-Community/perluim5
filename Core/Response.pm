@@ -10,6 +10,7 @@ sub new {
     my ($class,$argRef) = @_;
     my $this = {
         _rc => $argRef->{rc},
+        _id => $argRef->{id},
         _data => $argRef->{data},
         _time => $argRef->{time},
         _callback => $argRef->{callback},
@@ -30,6 +31,11 @@ sub rc {
 sub getCallback() {
     my ($self) = @_;
     return $self->{_callback};
+}
+
+sub getID() {
+    my ($self) = @_;
+    return $self->{_id};
 }
 
 sub getTime() {
@@ -66,6 +72,7 @@ sub dump {
     my ($self) = @_;
     my @Dump = (
         rc          => $self->rc(),
+        id          => $self->getID(),
         time        => $self->getTime(),
         callback    => $self->getCallback(),
         time        => $self->getTime(),
@@ -75,7 +82,7 @@ sub dump {
         robot       => $self->getRobot(),
         timeout     => $self->getTimeout()
     );
-    return @Dump;
+    return \@Dump;
 }
 
 sub pdsData {
