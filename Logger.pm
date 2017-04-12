@@ -56,6 +56,29 @@ sub trace {
     }
 }
 
+sub catch {
+	my($self,$emitter) = @_;
+    eval {
+        $emitter->on(error => sub {
+            $self->error(shift);
+        });
+    };
+    if($@) {
+        # Do nothing!
+    }
+}
+
+sub dump {
+	my($self,$ref) = @_;
+    eval {
+		my @Hash = $ref->dump();
+        $self->nolevel(Dumper(\@Hash));
+    };
+    if($@) {
+        $self->warn($@);
+    }
+}
+
 sub truncate {
 	my ($self,$size) = @_;
 	truncate($self->{_fh},defined $size ? $size : $self->{size});
