@@ -5,6 +5,7 @@ use warnings;
 use Nimbus::API;
 use Nimbus::PDS;
 use Nimbus::CFG;
+use Perluim::Core::Events;
 
 sub new {
     my ($class,$filePath,$readOnly) = @_;
@@ -12,20 +13,39 @@ sub new {
     my $this = {
         _closed => 0,
         _inner => $cfg,
-        readyOnly => $readOnly || 0
+        readyOnly => $readOnly || 0,
+        Emitter => Perluim::Core::Events->new
     };
     return bless($this,ref($class) || $class);
 }
 
+sub emit {
+    my ($self,$eventName,$data) = @_;
+    $self->{Emitter}->emit($eventName,$data);
+}
+
+sub on {
+    my ($self,$eventName,$callbackRef) = @_;
+    $self->{Emitter}->on($eventName,$callbackRef);
+}
+
 sub has {
     my ($self,$section,$key) = @_;
-    my $value = cfgKeyRead($self->{_inner},$section,$key || "");
+    my $value = cfgKeyRead($self->{_inner},$section,defined $key ? $key : "");
     return defined $value ? 1 : 0; 
 }
 
 sub read {
-    my ($self,$section,$key) = @_;
-    my $value = cfgKeyRead($self->{_inner},$section,$key || "");
+    my ($self,$section,$key,$defaultValue) = @_;
+    my $value = cfgKeyRead($self->{_inner},$section,defined $key ? $key : "");
+    $self->emit('log',"[CFG] Read value from $section/$key");
+    if(!defined $value && defined $defaultValue) {
+        $self->emit('log',"     => Undefined found. Fallback to <$defaultValue>");
+        $value = $defaultValue;
+    }
+    else {
+        $self->emit('log',"     => Value found <$value>");
+    }
     return $value;
 }
 
