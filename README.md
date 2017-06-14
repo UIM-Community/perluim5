@@ -3,13 +3,15 @@ CA UIM (Nimsoft) Perl Object-Oriented framework. Version 5 of perluim series.
 
 # Roadmap (alpha & draft stage)
 
-- Load requests from CFG (like alarmsmanager.pm from V4.X).
-- Try to handle request with async & threads module.
-- Work to include a Promise API (async handle).
+- Add asynchronous API to request class.
+- Add a new high level multithread class (less verbose and simplier api call). 
+- Add a registerScheduledCallback to the Server API.
 
-## Request (alpha release)
+## UIM Request
 
-The new request object offer a proper Object-oriented API. Launch multiple request without re-creating any objects, store response object and get more data about it.
+The new request object offer a proper Object-oriented API. Launch multiple request without re-creating any objects, store response object and get more data about it and how the execution has been done. This API now include a timeout support on UNIX system and a embedded retry mechanism to simplify your high level code.
+
+All request has been fully integrated with the new event emitter to catch and trace every actions and errors perfectly. We are working a asynchronous version of the API (to be handled in the same way with the event "done").
 
 ```perl
 my $Logger = Perluim::Logger->new({
@@ -55,14 +57,13 @@ sub getLocalRobot {
 }
 ```
 
-## Response (draft)
+## Response 
 
-Returned by the Request.
+Returned by the Request. The response Object store all informations about the request work and let you retrieve the data like you want by managing the PDS Object for you.
 
 ```perl
 my $Response = $req->send(0); 
-$Response->rc(); 
-$Response->is(NIME_ERR); 
+$Response->rc();
 $Response->pdsData(); 
 $Response->hashData(); 
 $Response->dump(); 
@@ -70,7 +71,15 @@ $Response->getCallback();
 etc...
 ```
 
-## Events (alpha release)
+```perl
+if($Response->rc(NIME_OK)) {
+    $Logger->info("IS OK!");
+}
+```
+
+## Events
+
+A classical event emitter. The core implementation is still hard because of perl Object oriented limitations.
 
 ```perl
 use Perluim::Core::Events;
@@ -88,12 +97,11 @@ $Emitter->on(foo => sub {
 $Emitter->emit('foo'); # stdout hello world! and hello world 2!
 ```
 
-## Logger (alpha release) 
+## Logger 
 
 **To be integrated**
 - Truncate support (chunk)
 - Pipe to another fileHandler
-- Header mech
 
 ```perl
 my $Logger = Perluim::Logger->new({
@@ -113,7 +121,7 @@ $Logger->trace( $Emitter );
 
 **To be integrated**
 - Scheduled callback
-- Integrated infrastructure scan
+- Implicit callback registering (bind global scope ?)
 - Test around hubpost and subscribe
 
 ```perl
@@ -149,7 +157,7 @@ sub get_info {
 
 ## Probes 
 
-> Work in progress
+> Work in progress (no focus for Alpha release).
 
 ## CFGManager (draft)
 
