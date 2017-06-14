@@ -24,8 +24,11 @@ sub new {
 }
 
 sub rc {
-    my ($self) = @_;
-    return $self->{_rc};
+    my ($self,$state) = @_;
+    if(!defined $state) {
+        return $self->{_rc};
+    }
+    return $self->{_rc} == $state ? 1 : 0;
 }
 
 sub getCallback() {
