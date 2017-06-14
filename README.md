@@ -59,9 +59,6 @@ sub getLocalRobot {
 
 Returned by the Request.
 
-**To be integrated**
-- More informations about : callback,addr,numbers of retry before success etc..
-
 ```perl
 my $Response = $req->send(0); 
 $Response->rc(); 
@@ -96,6 +93,7 @@ $Emitter->emit('foo'); # stdout hello world! and hello world 2!
 **To be integrated**
 - Truncate support (chunk)
 - Pipe to another fileHandler
+- Header mech
 
 ```perl
 my $Logger = Perluim::Logger->new({
@@ -153,7 +151,18 @@ sub get_info {
 
 > Work in progress
 
-## Others
+## CFGManager (draft)
 
-- Extend all class by an Event instance.
-- Extend probe by an abstracted class with default callback (_restart etc..)
+Safer and complete CFGManager with error & debugging handler. 
+
+```perl
+my $CFGManager = Perluim::Addons::CFGManager->new("ssr_backup.cfg",1);
+$Logger->trace( $CFGManager );
+
+$STR_Properties          = $CFGManager->read("setup","properties");
+$STR_Login               = $CFGManager->read("setup","login","administrator");
+$STR_Password            = $CFGManager->read("setup","password");
+$STR_ExportDirectory     = $CFGManager->read("setup","export_directory","export");
+```
+
+To review: Undefined handler.
