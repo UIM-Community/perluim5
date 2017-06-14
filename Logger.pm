@@ -24,6 +24,7 @@ sub new {
         level 	=> defined $argRef->{level} 	? $argRef->{level} : 3,
         size 	=> defined $argRef->{size} 		? $argRef->{size} : 0,
         rewrite => defined $argRef->{rewrite} 	? $argRef->{rewrite} : "yes",
+		_header => "",
 		_symbol => undef,
         _time 	=> time(),
         _fh 	=> undef
@@ -34,6 +35,25 @@ sub new {
 	open($blessed->{_fh}, $blessed->{_symbol} ,$blessed->{file});
 	$blessed->nolevel("New console class created with logfile as => $argRef->{file}!");
 	return $blessed;
+}
+
+sub setHeader {
+	my ($self,$headerStr,$reset) = @_;
+	if(!defined $headerStr) {
+		return;
+	}
+	$reset = defined $reset ? $reset : 1;
+	if($reset) {
+		$self->{_header} = $headerStr;
+	}
+	else {
+		$self->{_header} .= $headerStr;
+	}
+}
+
+sub resetHeader {
+	my ($self) = @_;
+	$self->{_header} = "";
 }
 
 sub _date {
@@ -104,10 +124,11 @@ sub log {
         $level = 3;
     }
     if($level <= $self->{level} || $level >= 5) {
-		my $date = _date();
+		my $date 		= _date();
 		my $filehandler = $self->{_fh};
-		print $filehandler "$date $loglevel{$level} - $msg\n";
-		print "$date $loglevel{$level} - $msg\n";
+		my $header 		= $self->{_header};
+		print $filehandler "$date $loglevel{$level} - ${header}${msg}\n";
+		print "$date $loglevel{$level} - ${header}${msg}\n";
 		$filehandler->autoflush;
     }
 }
