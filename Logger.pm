@@ -115,7 +115,7 @@ sub finalTime {
 
 sub copyTo {
 	my ($self,$path) = @_;
-	copy("$self->{logfile}","$path/$self->{logfile}") or warn "Failed to copy logfile!";
+	copy("$self->{file}","$path/$self->{file}") or warn "Failed to copy logfile!";
 }
 
 sub log {
