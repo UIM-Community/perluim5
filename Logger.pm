@@ -6,6 +6,7 @@ use File::stat;
 use File::Path 'rmtree';
 use IO::Handle;
 use Data::Dumper;
+use Scalar::Util qw(looks_like_number);
 
 our %loglevel = (
 	0 => "[CRITICAL]",
@@ -35,6 +36,13 @@ sub new {
 	open($blessed->{_fh}, $blessed->{_symbol} ,$blessed->{file});
 	$blessed->nolevel("New console class created with logfile as => $argRef->{file}!");
 	return $blessed;
+}
+
+sub setLevel {
+	my ($self,$level) = @_; 
+	if(defined $level && looks_like_number($level)) {
+		$self->{level} = $level;
+	}
 }
 
 sub setHeader {
