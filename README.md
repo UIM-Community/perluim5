@@ -1,4 +1,4 @@
-# perluim5
+# Perluim V5.0.0
 CA UIM (Nimsoft) Perl Object-Oriented framework. Version 5 of perluim series.
 
 # Roadmap (alpha & draft stage)
@@ -6,10 +6,16 @@ CA UIM (Nimsoft) Perl Object-Oriented framework. Version 5 of perluim series.
 - Add asynchronous API to request class.
 - Add a new high level multithread class (less verbose and simplier api call). 
 - Add a registerScheduledCallback to the Server API.
+- Continue to work on CFGManager 
+
+# Issues 
+
+- Complete rework of logger truncate methods is needed.
+- Deprecate probes API (not useful and to much work requested).
 
 ## UIM Request
 
-The new request object offer a proper Object-oriented API. Launch multiple request without re-creating any objects, store response object and get more data about it and how the execution has been done. This API now include a timeout support on UNIX system and a embedded retry mechanism to simplify your high level code.
+The new request object offer a proper Object-oriented API. Launch multiple request without re-creating any object or schema, store response object and get more data about it and how the execution has been done. This API now include a timeout support on UNIX system and a embedded retry mechanism to simplify your high level code.
 
 All request has been fully integrated with the new event emitter to catch and trace every actions and errors perfectly. We are working a asynchronous version of the API (to be handled in the same way with the event "done").
 
@@ -99,10 +105,6 @@ $Emitter->emit('foo'); # stdout hello world! and hello world 2!
 
 ## Logger 
 
-**To be integrated**
-- Truncate support (chunk)
-- Pipe to another fileHandler
-
 ```perl
 my $Logger = Perluim::Logger->new({
     file => "test.log",
@@ -154,10 +156,6 @@ sub get_info {
     nimSendReply($hMsg);
 }
 ```
-
-## Probes 
-
-> Work in progress (no focus for Alpha release).
 
 ## CFGManager (draft)
 
