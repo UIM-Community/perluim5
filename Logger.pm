@@ -1,70 +1,81 @@
 package Perluim::Logger;
+
 use strict;
 use warnings;
+
 use File::Copy;
-use File::stat;
-use File::Path 'rmtree';
+use Nimbus::API;
 use IO::Handle;
-use Data::Dumper;
 use Scalar::Util qw(looks_like_number);
 
+# LOGLEVEL Header
 our %loglevel = (
 	0 => "[CRITICAL]",
 	1 => "[ERROR]   ",
 	2 => "[WARNING] ",
 	3 => "[INFO]    ",
 	4 => "[DEBUG]   ",
-	5 => "          ",
-	6 => "[SUCCESS] "
+	5 => "          "
 );
 
 sub new {
-    my ($class,$argRef) = @_;
+    my ($class,$opt) = @_;
     my $this = {
-        file 	=> $argRef->{file},
-        level 	=> defined $argRef->{level} 	? $argRef->{level} : 3,
-        size 	=> defined $argRef->{size} 		? $argRef->{size} : 0,
-        rewrite => defined $argRef->{rewrite} 	? $argRef->{rewrite} : "yes",
+        file 	=> $opt->{file},
+        level 	=> defined $opt->{level} 	? $opt->{level} : 3,
+        size 	=> defined $opt->{size} 	? $opt->{size} * 1024 : 0,
 		_header => "",
-		_symbol => undef,
-        _time 	=> time(),
-        _fh 	=> undef
+		closed  => 0,
+        startTime => time()
     };
     my $blessed = bless($this,ref($class) || $class);
-	$blessed->{_symbol} = $blessed->{rewrite} eq "yes" ? ">" : ">>";
-	$blessed->truncate() if $blessed->{size} != 0;
-	open($blessed->{_fh}, $blessed->{_symbol} ,$blessed->{file});
-	$blessed->nolevel("New console class created with logfile as => $argRef->{file}!");
+    nimLogSet($blessed->{file},"",$blessed->{level});
+	nimLogTruncateSize($blessed->{size}) if $blessed->{size} != 0;
 	return $blessed;
 }
 
+#
+# set log level
+#
 sub setLevel {
 	my ($self,$level) = @_; 
-	if(defined $level && looks_like_number($level)) {
-		$self->{level} = $level;
-	}
+    nimLogSetLevel($level) if defined $level && looks_like_number($level);
 }
 
+#
+# set log size.
+#
+sub setSize {
+    my ($self,$size) = @_;
+    nimLogTruncateSize($size * 1024) if defined $size;
+}
+
+#
+# set log header (log prefix)
+#
 sub setHeader {
 	my ($self,$headerStr,$reset) = @_;
-	if(!defined $headerStr) {
-		return;
-	}
+	return if !defined $headerStr;
 	$reset = defined $reset ? $reset : 1;
 	if($reset) {
 		$self->{_header} = $headerStr;
+		return;
 	}
-	else {
-		$self->{_header} .= $headerStr;
-	}
+	$self->{_header} .= $headerStr;
 }
 
+#
+# reset header
+#
 sub resetHeader {
 	my ($self) = @_;
 	$self->{_header} = "";
 }
 
-sub _date {
+#
+# get a formatted date (on system datetime).
+#
+sub getFormattedDate {
 	my @months  = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 	my @days    = qw(Sun Mon Tue Wed Thu Fri Sat Sun);
 	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
@@ -72,73 +83,67 @@ sub _date {
 	return "$months[$mon] $timetwoDigits";
 }
 
+#
+# Trace log from another emitter!
+#
 sub trace {
     my($self,$emitter) = @_;
-    eval {
-        $emitter->on(log => sub {
-            $self->info(shift);
-        });
-    };
-    if($@) {
-        # Do nothing!
-    }
+    return if !defined $emitter;
+    $emitter->on(log => sub {
+        $self->info(shift);
+    });
 }
 
+#
+# Catch error from another emitter!
+#
 sub catch {
 	my($self,$emitter) = @_;
-    eval {
-        $emitter->on(error => sub {
-            $self->error(shift);
-        });
-    };
-    if($@) {
-        # Do nothing!
-    }
+    return if !defined $emitter;
+    $emitter->on(error => sub {
+        $self->error(shift);
+    });
 }
 
-sub dump {
-	my($self,$ref) = @_;
-    eval {
-		my @Hash = $ref->dump();
-        $self->nolevel(Dumper(\@Hash));
-    };
-    if($@) {
-        $self->warn($@);
-    }
-}
-
+# 
+# Truncate log file!
+# 
 sub truncate {
-	my ($self,$size) = @_;
-	truncate($self->{_fh},defined $size ? $size : $self->{size});
+    my ($self) = @_;
+    nimLogTruncate();
 }
 
-sub finalTime {
+#
+# close log!
+#
+sub close {
 	my ($self) = @_;
-	my $FINAL_TIME  = sprintf("%.2f", time() - $self->{_time});
-    my $Minute      = sprintf("%.2f", $FINAL_TIME / 60);
-	$self->log(5,'---------------------------------------');
-    $self->log(5,"Execution time = $FINAL_TIME second(s) [$Minute minutes]!");
-	$self->log(5,'---------------------------------------');
+	$self->{closed} = 1;
+	nimLogClose();
 }
 
+#
+# copyTo a new destination!
+#
 sub copyTo {
 	my ($self,$path) = @_;
-	copy("$self->{file}","$path/$self->{file}") or warn "Failed to copy logfile!";
+    return if !defined $path;
+	$self->close();
+	copy("$self->{file}","$path/$self->{file}") or warn "Failed to copy logfile $self->{file} to $path!";
 }
 
+#
+# All logs routines
+#
 sub log {
     my ($self,$level,$msg) = @_; 
+	return if $self->{closed};
     if(!defined($level)) {
         $level = 3;
     }
-    if($level <= $self->{level} || $level >= 5) {
-		my $date 		= _date();
-		my $filehandler = $self->{_fh};
-		my $header 		= $self->{_header};
-		print $filehandler "$date $loglevel{$level} - ${header}${msg}\n";
-		print "$date $loglevel{$level} - ${header}${msg}\n";
-		$filehandler->autoflush;
-    }
+    my $date 		= getFormattedDate();
+    my $header 		= $self->{_header};
+    nimLog($level,"$date $loglevel{$level} - ${header}${msg}");
 }
 
 sub fatal {
@@ -169,9 +174,4 @@ sub debug {
 sub nolevel {
 	my ($self,$msg) = @_;
 	$self->log(5,$msg);
-}
-
-sub success {
-	my ($self,$msg) = @_;
-	$self->log(6,$msg);
 }
