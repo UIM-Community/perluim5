@@ -9,6 +9,7 @@ require 5.010;
 require Exporter;
 require DynaLoader;
 require AutoLoader;
+use Scalar::Util qw(reftype looks_like_number);
 
 use Nimbus::API;
 use Nimbus::CFG;
@@ -17,8 +18,6 @@ use Nimbus::PDS;
 use Perluim::Core::Request;
 use Perluim::Core::Probe;
 use Perluim::Logger;
-use Perluim::Probes::Hub;
-use Perluim::Probes::Robot;
 
 our $Logger;
 our $Debug = 0;
@@ -51,9 +50,7 @@ our $IDefaultRequest = {
     generateAlarm
     pdsFromHash
     assignHash
-    getHubs
-    getRobots
-    getLocalRobot
+    cleanDirectory
 );
 no warnings 'recursion';
 
@@ -105,42 +102,6 @@ sub uimLogger {
     return $log;
 }
 
-sub getLocalRobot {
-    my ($options) = @_; 
-    $options = assignHash({ addr => "controller", callback => "get_info" },$options,$IDefaultRequest);
-    my $req = uimRequest($options);
-    $Logger->trace($req) if defined $Logger && $Debug == 1;
-    my $res = $req->send(1);
-    return $res->rc(), $res->is(NIME_OK) ? Perluim::Probes::Robot->new($res->pdsData()) : undef;
-}
-
-sub getHubs {
-    my ($options) = @_; 
-    $options = assignHash({ addr => "hub", callback => "gethubs" },$options,$IDefaultRequest);
-    my $req = uimRequest($options);
-    $Logger->trace($req) if defined $Logger && $Debug == 1;
-    my $res = $req->send(1);
-    if( $res->is(NIME_OK) ) {
-        my @Hubslist = ();
-        for( my $i = 0; my $HubPDS = $res->pdsData()->getTable("hublist",PDS_PDS,$i); $i++) {
-            push(@Hubslist,Perluim::Probes::Hub->new($HubPDS));
-        }
-        return $res->rc(),@Hubslist;
-    }
-    return $res->rc(),undef;
-}
-
-sub getRobots {
-    my ($RC,@Hubs) = getHubs(); 
-    if($RC == NIME_OK) {
-        foreach my $hub (@Hubs) {
-            # $hub->getRobots();
-        }
-        # get robots from hub!
-    }   
-    return $RC,undef;
-}
-
 sub assignHash {
     my ($targetRef,$cibleRef,@othersRef) = @_;
     foreach my $key (keys %{ $cibleRef }) {
@@ -162,12 +123,12 @@ sub toMilliseconds {
 }
 
 sub pdsFromHash {
-    my ($PDSData) = @_;
+    my ($hashRef) = @_;
     my $PDS = Nimbus::PDS->new;
-    for my $key (keys %{ $PDSData }) {
-        my $val = $PDSData->{$key};
+    for my $key (keys %{ $hashRef }) {
+        my $val = $hashRef->{$key};
         if(ref($val) eq "HASH") {
-            $PDS->put($key,$val,PDS_PDS);
+            $PDS->put($key,pdsFromHash($val),PDS_PDS);
         }
         else {
             $PDS->put($key,$val,looks_like_number($val) ? PDS_INT : PDS_PCH);
@@ -182,6 +143,26 @@ sub doSleep {
     while($sleepTime--) {
         sleep(1);
     }
+}
+
+sub cleanDirectory {
+	my ($directory,$maxAge) = @_;
+
+	opendir(DIR,"$directory");
+	my @directory = readdir(DIR);
+	my @toRemove = ();
+	foreach my $file (@directory) {
+		next if ($file =~ m/^\./);
+		my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks) = stat("$directory/$file");
+		if(defined $ctime) {
+			push(@toRemove,$file) if(time() - $ctime > $maxAge);
+		}
+	}
+
+	foreach(@toRemove) {
+		$Logger->warn("Remove old directory $directory => $_") if defined $Logger;
+		rmtree("$directory/$_");
+	}
 }
 
 sub strBeginWith {
@@ -240,7 +221,7 @@ sub generateAlarm {
     $PDS->string("nimid",$nimid);
     $PDS->number("nimts",time());
     $PDS->number("tz_offset",0);
-    $PDS->string("subject","$subject");
+    $PDS->string("subject",$subject);
     $PDS->string("md5sum","");
     $PDS->string("user_tag_1",$hashRef->{usertag1} || "");
     $PDS->string("user_tag_2",$hashRef->{usertag2} || "");
@@ -250,8 +231,10 @@ sub generateAlarm {
     $PDS->number("pri",$hashRef->{severity} || 0);
     $PDS->string("dev_id",$hashRef->{dev_id} || "");
     $PDS->string("met_id",$hashRef->{met_id} || "");
-    if ($hashRef->{supp_key}) { $PDS->string("supp_key",$hashRef->{supp_key}) };
-    $PDS->string("suppression",$hashRef->{suppression} || "");
+    if (defined $hashRef->{supp_key}) { 
+        $PDS->string("supp_key",$hashRef->{supp_key}) 
+    };
+    $PDS->string("suppression",$hashRef->{suppression} || $hashRef->{supp_key} || "");
     $PDS->string("origin",$hashRef->{origin} || "");
     $PDS->string("domain",$hashRef->{domain} || "");
 
