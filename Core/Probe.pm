@@ -9,6 +9,7 @@ use Perluim::API;
 sub new {
     my ($class,$argRef) = @_;
     my @Subscribtions = ();
+    my @Attach = ();
     my $this = {
         name => $argRef->{name},
         version => defined $argRef->{version} ? $argRef->{version} : "1.0",
@@ -18,6 +19,7 @@ sub new {
         _sess => undef,
         callbacks => {},
         subscribtions => \@Subscribtions,
+        attach => \@Attach,
         Emitter => Perluim::Core::Events->new,
         Logger => undef,
         hubs => {},
@@ -31,10 +33,6 @@ sub setLogger {
     if(defined $logger) {
         $self->{Logger} = $logger;
     }
-}
-
-sub scan {
-
 }
 
 sub emit {
@@ -61,17 +59,15 @@ sub start {
         $self->emit('restart');
     }
 
-    sub hubpost {
-        $self->emit('hubpost',{
-            hMsg => $hMsg,
-            data => $udata,
-            full => $full
-        });
-    }
-
     foreach my $subject (@{$self->{subscribtions}}) {
         if($self->{_sess}->subscribe($subject)) {
             $self->emit('log',"unable to subscribe to $subject\n");
+        }
+    }
+
+    foreach my $queueName (@{$self->{attach}}) {
+        if($self->{_sess}->attach($queueName)) {
+            $self->emit('log',"unable to attach queue $queueName\n");
         }
     }
     
@@ -106,6 +102,11 @@ sub _argToString {
 sub subscribe {
     my ($self,$subject) = @_;
     push(@{$self->{subscribtions}},$subject);
+}
+
+sub attach {
+    my ($self,$queueName) = @_;
+    push(@{$self->{attach}},$queueName);
 }
 
 sub registerCallback {
