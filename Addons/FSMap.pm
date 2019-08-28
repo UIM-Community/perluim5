@@ -2,10 +2,13 @@ package Perluim::Addons::FSMap;
 
 use strict;
 use warnings;
-use Perluim::Utils;
 use Nimbus::API;
 use Nimbus::PDS;
 use Nimbus::CFG;
+
+sub strBeginWith() {
+    return substr($_[0], 0, length($_[1])) eq $_[1];
+}
 
 sub new {
     my ($class,$location) = @_;
@@ -36,7 +39,7 @@ sub begins_with {
 
 sub has {
     my ($self,$key) = @_;
-    if(not perluim::utils::strBeginWith($key,'/')) {
+    if(not strBeginWith($key,'/')) {
         $key = "/$key";
     }
     if(defined $self->{sections}->{$key}) {
@@ -47,7 +50,7 @@ sub has {
 
 sub getParams {
     my ($self,$key) = @_;
-    if(not perluim::utils::strBeginWith($key,'/')) {
+    if(not strBeginWith($key,'/')) {
         $key = "/$key";
     }
     my ($list) = cfgKeyList($self->{file},$key);
@@ -60,7 +63,7 @@ sub getParams {
 
 sub set {
     my ($self,$key,$hashRefParams) = @_;
-    if(not perluim::utils::strBeginWith($key,'/')) {
+    if(not strBeginWith($key,'/')) {
         $key = "/$key";
     }
     if($self->has($key)) {
@@ -86,7 +89,7 @@ sub set {
 
 sub delete {
     my ($self,$key) = @_;
-    if(not perluim::utils::strBeginWith($key,'/')) {
+    if(not strBeginWith($key,'/')) {
         $key = "/$key";
     }
     cfgSectionDelete($self->{file},$key);
